@@ -1,12 +1,16 @@
 * {
 	background-color: black;
 	color: white;
-	font-size: medium;
-	font-family: serif;	
+	font-size: 17px;
+	font-family: serif;
 }
 
 header {
-	text-align: center;
+	text-align: left;
+}
+
+nav {
+	float: right;
 }
 
 body {
@@ -15,12 +19,35 @@ body {
 	max-width: 750px;
 }
 
+h1 {
+	text-align: center;
+	font-size: 25px;
+}
+
+h2 {
+	font-size: 22px;
+}
+
+h3 {
+	font-size: 20px;
+}
+
 blockquote {
-	font-style: italic;
-	border-left: 3px solid white;
-	margin: 16px;
-	padding-left: 8px;
-	transition: 150ms ease-in-out;
+	display: block;
+	margin: 25px auto;
+	color: greenyellow;
+}
+
+code {
+	font-family: monospace;
+	font-size: 75%;
+}
+
+pre {
+	border: 1px solid white;
+	display: block;
+	overflow-x: scroll;
+	padding: 6px;
 }
 
 a {
@@ -31,9 +58,8 @@ a {
 a:hover {
 	color: black;
 	background-color: white;
-	text-decoration: none;
 }
 
-table, th, td {
+th, td {
 	border: 1px solid;
 }
