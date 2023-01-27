@@ -13,6 +13,10 @@ nav {
 	float: right;
 }
 
+nav a {
+	text-decoration: none;
+}
+
 body {
 	padding: 8px;
 	margin: auto;
@@ -34,8 +38,9 @@ h3 {
 
 blockquote {
 	display: block;
-	margin: 25px auto;
-	color: greenyellow;
+	margin-left: 32px;
+	border-left: 2px solid white;
+	padding-left: 8px;
 }
 
 code {
