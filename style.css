@@ -1,8 +1,8 @@
 * {
 	background-color: black;
 	color: white;
-	font-size: 17px;
-	font-family: serif;
+	font-size: 16px;
+	font-family: 'Raleway', sans-serif;
 }
 
 header {
@@ -20,20 +20,23 @@ nav a {
 body {
 	padding: 8px;
 	margin: auto;
-	max-width: 750px;
+	max-width: 50%;
 }
 
 h1 {
 	text-align: center;
-	font-size: 25px;
+	font-size: 175%;
+	font-family: 'Unna', serif;
 }
 
 h2 {
-	font-size: 22px;
+	font-size: 150%;
+	font-family: 'Unna', serif;
 }
 
 h3 {
-	font-size: 20px;
+	font-size: 125%;
+	font-family: 'Unna', serif;
 }
 
 blockquote {
@@ -44,7 +47,7 @@ blockquote {
 }
 
 code {
-	font-family: monospace;
+	font-family: 'Fira Code', monospace;
 	font-size: 75%;
 }
 
@@ -53,16 +56,18 @@ pre {
 	display: block;
 	overflow-x: scroll;
 	padding: 6px;
+	border-radius: 5px;
 }
 
 a {
-	color: white;
-	text-decoration: underline;
+	color: #f06e;
+	text-decoration: none;
+	transition-duration: 167ms;
 }
 
 a:hover {
 	color: black;
-	background-color: white;
+	background-color: #f06e;
 }
 
 th, td {
