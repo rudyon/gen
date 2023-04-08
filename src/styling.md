@@ -4,7 +4,7 @@
 
 ### Header 3
 
-This is a paragraph with a [link](), *italic*, **bold**, ~~strikethrough~~ and `code`.
+This is a paragraph with a [link](), *italic*, **bold**, ~~strikethrough~~ and `code`[^1].
 
 - This is a list with
 - [link]()
@@ -30,6 +30,8 @@ namespace HelloWorld
 > 
 > *~ Author*
 
-| This | is | a | table |
-| ---- | -- | - | ----- |
+| This     | is       | a        | table      |
+| -------- | -------- | -------- | ---------- |
 | [link]() | *italic* | **bold** | ~~strike~~ |
+
+[^1]: and a footnote.

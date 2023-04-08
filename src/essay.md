@@ -10,4 +10,4 @@ The hypothesis proposed by the authors is that when the communicative load is hi
 
 The results of the study suggest that lexical stress aids with word recognition in Spanish, English, and Dutch. However, the authors recommend further research, as it could be argued that English and Dutch are too similar to suggest a cross-linguistic pattern. They specifically suggest that further research be conducted on language families other than Romance or Germanic.
 
-[^1]: VAN SOEREN, D. (2022). The Role of Word Recognition Factors and Lexical Stress in the Distribution of Consonants in Spanish, English and Dutch. _Journal of Linguistics,_ 1-29. doi:10.1017/S0022226722000081
+[^1]: VAN SOEREN, D. (2022). The Role of Word Recognition Factors and Lexical Stress in the Distribution of Consonants in Spanish, English and Dutch. _Journal of Linguistics,_ 1-29. doi:10.1017/S0022226722000081

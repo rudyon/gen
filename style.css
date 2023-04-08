@@ -1,4 +1,4 @@
-* {
+html {
 	background-color: black;
 	color: white;
 	font-size: 16px;
@@ -20,7 +20,8 @@ nav a {
 body {
 	padding: 8px;
 	margin: auto;
-	max-width: 50%;
+	width: 800px;
+	max-width: 100%;
 }
 
 h1 {
@@ -63,6 +64,7 @@ a {
 	color: #f06e;
 	text-decoration: none;
 	transition-duration: 167ms;
+	font-family: 'Raleway', sans-serif;
 }
 
 a:hover {
@@ -70,6 +72,21 @@ a:hover {
 	background-color: #f06e;
 }
 
-th, td {
-	border: 1px solid;
+hr {
+	display: none;
+}
+
+:target {
+	box-shadow: 2px 2px #f06e;
+	transition: all .8s; 
+}
+
+table {
+	border-collapse: collapse;
+	border-style: hidden;
+}
+d
+table td {
+	border: 1px solid white;
+	padding: 2px;
 }
