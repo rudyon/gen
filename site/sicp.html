@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>sicp</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<ul>
+<li>” <em>procedural epistemology</em>—the study of the structure of
+knowledge from an imperative point of view, as opposed to the more
+declarative point of view taken by classical mathematical subjects”</li>
+<li>what is a reqursion equation?
+<ul>
+<li>read http://www-formal.stanford.edu/jmc/recursive.pdf</li>
+</ul></li>
+<li>applicative order is inside out while normal order is outside in
+<ul>
+<li>“Lisp uses applicative-order evaluation, partly because of the
+additional efficiency obtained from avoiding multiple evaluations of
+expressions […] normal-order evaluation becomes much more complicated to
+deal with when we leave the realm of procedures that can be modeled by
+substitution.”</li>
+</ul></li>
+<li>“a floating point number is an approximation of a real number. This
+causes rounding issues.” ~ sicp solutions</li>
+<li>what is lexical scoping?</li>
+<li>iteration -&gt; time = O(x), space = O(1)</li>
+<li>recursion -&gt; time - O(x), space = O(x)</li>
+<li>in the case of evaluating the expression <code>(+ 2 (* 4 5))</code>
+<ul>
+<li>normal order would go through this by first evaluting the
+<code>2</code> as 2 and then evaluting the <code>(* 4 5)</code> as 2
+then finally it would evalute the whole expression as 22.
+<ul>
+<li>comapred to the apllicative order would first evaluate
+<code>(* 4 5)</code> as 20 and the evalute <code>2</code> as 2 and then
+evaluate the whole thing as 22.</li>
+<li>this might seem insignificant but see exercise 1.6 in some cases it
+is. so it is important to know the difference</li>
+</ul></li>
+</ul></li>
+<li>“execute an iterative process in constant space, even if the
+iterative process is described by a recursive procedure. An
+implementation with this property is
+called <em>tail-recursive</em>.”</li>
+</ul>
+</body>
+</html>
