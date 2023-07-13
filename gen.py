@@ -1,6 +1,7 @@
 import os
 import shutil
 import logging
+import configparser
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
@@ -8,6 +9,9 @@ def copy_css_file(css_source, destination):
     css_destination = os.path.join(destination, "style.css")
     shutil.copy2(css_source, css_destination)
     logging.info("Copied CSS file.")
+
+def copy_images(source, destination):
+    os.system(f"cp {source}/*.png {destination}/")
 
 def clear_destination_directory(destination):
     logging.info("Clearing destination directory...")
@@ -53,6 +57,7 @@ def generate_website(css_source, source, destination):
     clear_destination_directory(destination)
 
     copy_css_file(css_source, destination)
+    copy_images(source, destination)
 
     index_file = generate_index_file(source, destination)
 
@@ -68,11 +73,14 @@ def generate_website(css_source, source, destination):
     logging.info(f"Generated site. You can visit it at file://{destination}/index.html")
 
 if __name__ == "__main__":
-    print("[INFO] You must use the full path directory.")
+    print("[INFO] Reading configuration from config.ini file.")
 
-    source = input("Where is the markdown source directory? ")
-    destination = input("Where is the HTML destination directory? ")
-    css_source = input("Where is the CSS file located? ")
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+
+    source = config.get("Paths", "MarkdownSource")
+    destination = config.get("Paths", "HTMLDestination")
+    css_source = config.get("Paths", "CSSFile")
 
     i = input("The destination directory you chose will be wiped. Type 'YES' to confirm. ")
     if i == "YES":
