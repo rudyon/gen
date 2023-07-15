@@ -1,19 +1,27 @@
 body {
-	background: #000;
+	background: #202022;
 	color: #fff;
 	font-family: serif;
-	font-size: 18px;
+	font-size: 120%;
 	max-width: 864px;
 }
 
+td, th {
+	border: solid 1px;
+	padding: 2px;
+}
+
 a {
-	color: #fff;
-	font-style: italic;
+	color: #ff60aa;
 }
 
 a:hover {
 	text-decoration: none;
-	background-color: #fff;
-	color: #000;
-	font-style: normal;
+	background-color: #ff60aa;
+	color: #202020;
+}
+
+code {
+	font-family: monospace;
+	border: solid 1px;
 }
