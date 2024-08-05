@@ -274,3 +274,7 @@ fieldset {
 	margin-bottom: 0.5rem;
 	font-weight: 600;
 }
+/* Disable input elements. Since this is supposed to be read only. */
+input {
+	pointer-events: none;
+}
