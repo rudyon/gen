@@ -41,19 +41,32 @@ def process_content(content, vault_path, output_path, config, depth=0):
             return link_text  # Remove brackets for non-config pages
 
     def process_images(match):
+        alt_text = match.group(1)
         image_path = match.group(2)
-        full_image_path = os.path.join(vault_path, image_path)
+        
+        # Check if the image path is relative
+        if not os.path.isabs(image_path):
+            # First, check in the attachments folder
+            full_image_path = os.path.join(vault_path, 'attachments', image_path)
+            if not os.path.exists(full_image_path):
+                # If not found in attachments, check in the vault root
+                full_image_path = os.path.join(vault_path, image_path)
+        else:
+            full_image_path = image_path
+
         if os.path.exists(full_image_path):
             # Create 'images' directory in the output path if it doesn't exist
             output_images_dir = os.path.join(output_path, 'images')
             os.makedirs(output_images_dir, exist_ok=True)
             
             # Copy the image to the output directory
-            image_filename = os.path.basename(image_path)
-            shutil.copy(full_image_path, os.path.join(output_images_dir, image_filename))
+            image_filename = os.path.basename(full_image_path)
+            shutil.copy2(full_image_path, os.path.join(output_images_dir, image_filename))
             
             # Update the image path in the Markdown
-            return f'![{match.group(1)}](images/{image_filename})'
+            return f'![{alt_text}](images/{image_filename})'
+        
+        print(f"Warning: Image not found: {image_path}")
         return match.group(0)  # Return original if image not found
 
     # Process embeds
