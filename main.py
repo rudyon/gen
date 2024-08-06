@@ -33,24 +33,30 @@ def process_content(content, vault_path, output_path, config, depth=0):
         return match.group(0)  # Return original if file not found
 
     def process_links(match):
-        link_text = match.group(1)
-        link_filename = link_text + '.md'
+        link_parts = match.group(1).split('|')
+        link_text = link_parts[-1].strip()
+        link_target = link_parts[0].strip()
+        link_filename = link_target + '.md'
+        
         if link_filename in config['pages']:
-            return f'[{link_text}]({link_text}.html)'
+            return f'[{link_text}]({link_target}.html)'
         else:
             return link_text  # Remove brackets for non-config pages
 
     def process_images(match):
-        alt_text = match.group(1)
-        image_path = match.group(2)
+        image_path = match.group(1)
+        
+        print(f"Processing image: {image_path}")
         
         # Check if the image path is relative
         if not os.path.isabs(image_path):
             # First, check in the attachments folder
             full_image_path = os.path.join(vault_path, 'attachments', image_path)
+            print(f"Checking path: {full_image_path}")
             if not os.path.exists(full_image_path):
                 # If not found in attachments, check in the vault root
                 full_image_path = os.path.join(vault_path, image_path)
+                print(f"Checking path: {full_image_path}")
         else:
             full_image_path = image_path
 
@@ -63,8 +69,10 @@ def process_content(content, vault_path, output_path, config, depth=0):
             image_filename = os.path.basename(full_image_path)
             shutil.copy2(full_image_path, os.path.join(output_images_dir, image_filename))
             
+            print(f"Copied image: {full_image_path} to {os.path.join(output_images_dir, image_filename)}")
+            
             # Update the image path in the Markdown
-            return f'![{alt_text}](images/{image_filename})'
+            return f'![{image_filename}](images/{image_filename})'
         
         print(f"Warning: Image not found: {image_path}")
         return match.group(0)  # Return original if image not found
@@ -75,8 +83,8 @@ def process_content(content, vault_path, output_path, config, depth=0):
     # Process links
     content = re.sub(r'\[\[(.*?)\]\]', process_links, content)
 
-    # Process images
-    content = re.sub(r'!\[(.*?)\]\((.*?)\)', process_images, content)
+    # Process images (including "!Pasted image" syntax)
+    content = re.sub(r'!(Pasted image [0-9]+\.png)', process_images, content)
 
     return content
 
@@ -191,3 +199,5 @@ if __name__ == '__main__':
         print(f"An error occurred: {str(e)}")
         import traceback
         traceback.print_exc()
+
+
