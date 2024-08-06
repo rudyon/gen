@@ -4,6 +4,9 @@ import markdown
 import yaml
 from jinja2 import Environment, FileSystemLoader
 import shutil
+from feedgen.feed import FeedGenerator
+from datetime import datetime
+import html
 
 def load_config(config_path):
     with open(config_path, 'r') as config_file:
@@ -36,7 +39,7 @@ def process_content(content, vault_path, output_path, config, depth=0):
             return link_text  # Remove brackets for non-config pages
 
     def process_images(match):
-        image_path = match.group(1)
+        image_path = match.group(2)
         full_image_path = os.path.join(vault_path, image_path)
         if os.path.exists(full_image_path):
             # Create 'images' directory in the output path if it doesn't exist
@@ -48,7 +51,7 @@ def process_content(content, vault_path, output_path, config, depth=0):
             shutil.copy(full_image_path, os.path.join(output_images_dir, image_filename))
             
             # Update the image path in the Markdown
-            return f'![{match.group(2)}](images/{image_filename})'
+            return f'![{match.group(1)}](images/{image_filename})'
         return match.group(0)  # Return original if image not found
 
     # Process embeds
@@ -61,6 +64,22 @@ def process_content(content, vault_path, output_path, config, depth=0):
     content = re.sub(r'!\[(.*?)\]\((.*?)\)', process_images, content)
 
     return content
+
+def generate_rss_feed(pages, output_path, config):
+    fg = FeedGenerator()
+    fg.title(config.get('site_title', 'My Static Site'))
+    fg.description(config.get('site_description', 'A static site generated from Markdown files'))
+    fg.link(href=config.get('site_url', 'http://example.com'))
+    fg.language('en')
+
+    for page in pages:
+        fe = fg.add_entry()
+        fe.title(page['title'])
+        fe.link(href=f"{config.get('site_url', 'http://example.com')}/{page['link']}")
+        fe.description(html.escape(page['summary']))
+        fe.pubDate(datetime.now())
+
+    fg.rss_file(os.path.join(output_path, 'feed.xml'))
 
 def generate_site(config):
     vault_path = config['vault_path']
@@ -105,11 +124,21 @@ def generate_site(config):
         with open(output_file_path, 'w', encoding='utf-8') as f:
             f.write(page_html)
 
-        processed_pages.append({'title': os.path.splitext(page)[0], 'link': output_file})
+        # Create a summary for the RSS feed (first 150 characters)
+        summary = re.sub(r'<[^>]+>', '', html_content)[:150] + '...'
+
+        processed_pages.append({
+            'title': os.path.splitext(page)[0],
+            'link': output_file,
+            'summary': summary
+        })
 
     index_html = index_template.render(pages=processed_pages)
     with open(os.path.join(output_path, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(index_html)
+
+    # Generate RSS feed
+    generate_rss_feed(processed_pages, output_path, config)
 
 if __name__ == '__main__':
     print("Starting the static site generator...")
