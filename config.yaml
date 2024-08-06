@@ -1,6 +1,7 @@
 vault_path: /home/rudyon/memx
-output_path: /home/rudyon/devl/rudyon.github.io
+output_path: /home/rudyon/Developmentrudyon.github.io
 pages:
+  - plan9.md
   - conformity.md
   - shivi.md
   - ultralearning.md

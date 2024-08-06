@@ -13,7 +13,7 @@ def remove_frontmatter(content):
     frontmatter_pattern = re.compile(r'^---\s*\n(.*?\n)---\s*\n', re.DOTALL)
     return frontmatter_pattern.sub('', content)
 
-def process_content(content, vault_path, config, depth=0):
+def process_content(content, vault_path, output_path, config, depth=0):
     if depth > 10:  # Prevent infinite recursion
         return content
 
@@ -24,7 +24,7 @@ def process_content(content, vault_path, config, depth=0):
             with open(embed_path, 'r', encoding='utf-8') as embed_file:
                 embed_content = embed_file.read()
             embed_content = remove_frontmatter(embed_content)
-            return process_content(embed_content, vault_path, config, depth + 1)
+            return process_content(embed_content, vault_path, output_path, config, depth + 1)
         return match.group(0)  # Return original if file not found
 
     def process_links(match):
@@ -35,11 +35,30 @@ def process_content(content, vault_path, config, depth=0):
         else:
             return link_text  # Remove brackets for non-config pages
 
+    def process_images(match):
+        image_path = match.group(1)
+        full_image_path = os.path.join(vault_path, image_path)
+        if os.path.exists(full_image_path):
+            # Create 'images' directory in the output path if it doesn't exist
+            output_images_dir = os.path.join(output_path, 'images')
+            os.makedirs(output_images_dir, exist_ok=True)
+            
+            # Copy the image to the output directory
+            image_filename = os.path.basename(image_path)
+            shutil.copy(full_image_path, os.path.join(output_images_dir, image_filename))
+            
+            # Update the image path in the Markdown
+            return f'![{match.group(2)}](images/{image_filename})'
+        return match.group(0)  # Return original if image not found
+
     # Process embeds
     content = re.sub(r'!\[\[(.*?)\]\]', process_embeds, content)
     
     # Process links
     content = re.sub(r'\[\[(.*?)\]\]', process_links, content)
+
+    # Process images
+    content = re.sub(r'!\[(.*?)\]\((.*?)\)', process_images, content)
 
     return content
 
@@ -76,7 +95,7 @@ def generate_site(config):
             content = f.read()
 
         content = remove_frontmatter(content)
-        content = process_content(content, vault_path, config)
+        content = process_content(content, vault_path, output_path, config)
 
         # Convert Markdown to HTML using the configured Markdown instance
         html_content = md.convert(content)
