@@ -7,6 +7,7 @@ import shutil
 from feedgen.feed import FeedGenerator
 from datetime import datetime
 import html
+import pytz
 
 def load_config(config_path):
     with open(config_path, 'r') as config_file:
@@ -65,21 +66,32 @@ def process_content(content, vault_path, output_path, config, depth=0):
 
     return content
 
-def generate_rss_feed(pages, output_path, config):
+def generate_feeds(pages, output_path, config):
     fg = FeedGenerator()
-    fg.title(config.get('site_title', 'My Static Site'))
-    fg.description(config.get('site_description', 'A static site generated from Markdown files'))
-    fg.link(href=config.get('site_url', 'http://example.com'))
+    fg.title(config.get('site_title', 'rudyon.io'))
+    fg.description(config.get('site_description', 'Public facing side of rudyon\'s notes'))
+    fg.link(href=config.get('site_url', 'http://rudyon.io'))
     fg.language('en')
+
+    # Use UTC timezone
+    utc_tz = pytz.UTC
 
     for page in pages:
         fe = fg.add_entry()
         fe.title(page['title'])
-        fe.link(href=f"{config.get('site_url', 'http://example.com')}/{page['link']}")
+        fe.link(href=f"{config.get('site_url', 'http://rudyon.io')}/{page['link']}")
         fe.description(html.escape(page['summary']))
-        fe.pubDate(datetime.now())
+        fe.pubDate(datetime.now(utc_tz))
+        
+        # Add a unique id for each entry
+        entry_id = f"{config.get('site_url', 'http://rudyon.io')}/{page['link']}"
+        fe.id(entry_id)
 
-    fg.rss_file(os.path.join(output_path, 'feed.xml'))
+    # Generate RSS feed
+    fg.rss_file(os.path.join(output_path, 'rss.xml'))
+    
+    # Generate Atom feed
+    fg.atom_file(os.path.join(output_path, 'atom.xml'))
 
 def generate_site(config):
     vault_path = config['vault_path']
@@ -105,7 +117,10 @@ def generate_site(config):
         print("Warning: style.css not found in templates folder")
 
     processed_pages = []
-    for page in pages:
+    total_pages = len(pages)
+    for index, page in enumerate(pages, start=1):
+        print(f"Processing file {index}/{total_pages}: {page}")
+        
         input_path = os.path.join(vault_path, page)
         output_file = os.path.splitext(page)[0] + '.html'
         output_file_path = os.path.join(output_path, output_file)
@@ -133,12 +148,17 @@ def generate_site(config):
             'summary': summary
         })
 
+        print(f"Converted {page} to {output_file}")
+
+    print("Generating index.html...")
     index_html = index_template.render(pages=processed_pages)
     with open(os.path.join(output_path, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(index_html)
+    print("index.html generated")
 
-    # Generate RSS feed
-    generate_rss_feed(processed_pages, output_path, config)
+    print("Generating RSS and Atom feeds...")
+    generate_feeds(processed_pages, output_path, config)
+    print("Feeds generated")
 
 if __name__ == '__main__':
     print("Starting the static site generator...")
@@ -149,3 +169,5 @@ if __name__ == '__main__':
         print("Site generation complete!")
     except Exception as e:
         print(f"An error occurred: {str(e)}")
+
+
