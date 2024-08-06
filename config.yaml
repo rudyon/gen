@@ -7,3 +7,9 @@ pages:
   - ultralearning.md
   - 'guns germs and steel.md'
   - sapiens.md
+site_url: "https://rudyon.io"
+site_title: "rudyon.io"
+site_description: "Public facing side of rudyon's notes"
+author_name: "rudyon"
+author_email: "keremberket@gmail.com"
+site_logo: "https://rudyon.io/logo.jpg"

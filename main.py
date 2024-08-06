@@ -8,6 +8,7 @@ from feedgen.feed import FeedGenerator
 from datetime import datetime
 import html
 import pytz
+from urllib.parse import urljoin
 
 def load_config(config_path):
     with open(config_path, 'r') as config_file:
@@ -68,9 +69,13 @@ def process_content(content, vault_path, output_path, config, depth=0):
 
 def generate_feeds(pages, output_path, config):
     fg = FeedGenerator()
-    fg.title(config.get('site_title', 'rudyon.io'))
-    fg.description(config.get('site_description', 'Public facing side of rudyon\'s notes'))
-    fg.link(href=config.get('site_url', 'http://rudyon.io'))
+    site_url = config.get('site_url', 'http://example.com')
+    fg.id(site_url)
+    fg.title(config.get('site_title', 'My Static Site'))
+    fg.author({'name': config.get('author_name', 'Site Author'), 'email': config.get('author_email', 'author@example.com')})
+    fg.link(href=site_url, rel='alternate')
+    fg.logo(config.get('site_logo', 'http://ex.com/logo.jpg'))
+    fg.subtitle(config.get('site_description', 'A static site generated from Markdown files'))
     fg.language('en')
 
     # Use UTC timezone
@@ -78,20 +83,22 @@ def generate_feeds(pages, output_path, config):
 
     for page in pages:
         fe = fg.add_entry()
+        page_url = urljoin(site_url, page['link'])
+        fe.id(page_url)
         fe.title(page['title'])
-        fe.link(href=f"{config.get('site_url', 'http://rudyon.io')}/{page['link']}")
+        fe.link(href=page_url)
         fe.description(html.escape(page['summary']))
         fe.pubDate(datetime.now(utc_tz))
-        
-        # Add a unique id for each entry
-        entry_id = f"{config.get('site_url', 'http://rudyon.io')}/{page['link']}"
-        fe.id(entry_id)
 
     # Generate RSS feed
-    fg.rss_file(os.path.join(output_path, 'rss.xml'))
+    rss_path = os.path.join(output_path, 'rss.xml')
+    fg.rss_file(rss_path)
+    print(f"RSS feed generated: {rss_path}")
     
     # Generate Atom feed
-    fg.atom_file(os.path.join(output_path, 'atom.xml'))
+    atom_path = os.path.join(output_path, 'atom.xml')
+    fg.atom_file(atom_path)
+    print(f"Atom feed generated: {atom_path}")
 
 def generate_site(config):
     vault_path = config['vault_path']
@@ -169,5 +176,5 @@ if __name__ == '__main__':
         print("Site generation complete!")
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-
-
+        import traceback
+        traceback.print_exc()
