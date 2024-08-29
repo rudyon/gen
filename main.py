@@ -19,6 +19,10 @@ def remove_frontmatter(content):
     return frontmatter_pattern.sub('', content)
 
 def process_content(content, vault_path, output_path, config, depth=0):
+    if content is None:
+        print("Warning: Received None content in process_content")
+        return ""
+
     if depth > 10:  # Prevent infinite recursion
         return content
 
@@ -37,26 +41,27 @@ def process_content(content, vault_path, output_path, config, depth=0):
         link_text = link_parts[-1].strip()
         link_target = link_parts[0].strip()
         link_filename = link_target + '.md'
-        
+
         if link_filename in config['pages']:
             return f'[{link_text}]({link_target}.html)'
         else:
             return link_text  # Remove brackets for non-config pages
 
     def process_images(match):
-        image_path = match.group(1)
-        
-        print(f"Processing image: {image_path}")
-        
+        full_match = match.group(0)
+        image_parts = match.group(1).split('|')
+        image_path = image_parts[0].strip()
+        size = image_parts[1] if len(image_parts) > 1 else None
+
+        print(f"Processing image: {image_path}, Size: {size}")
+
         # Check if the image path is relative
         if not os.path.isabs(image_path):
             # First, check in the attachments folder
             full_image_path = os.path.join(vault_path, 'attachments', image_path)
-            print(f"Checking path: {full_image_path}")
             if not os.path.exists(full_image_path):
                 # If not found in attachments, check in the vault root
                 full_image_path = os.path.join(vault_path, image_path)
-                print(f"Checking path: {full_image_path}")
         else:
             full_image_path = image_path
 
@@ -64,27 +69,27 @@ def process_content(content, vault_path, output_path, config, depth=0):
             # Create 'images' directory in the output path if it doesn't exist
             output_images_dir = os.path.join(output_path, 'images')
             os.makedirs(output_images_dir, exist_ok=True)
-            
+
             # Copy the image to the output directory
             image_filename = os.path.basename(full_image_path)
             shutil.copy2(full_image_path, os.path.join(output_images_dir, image_filename))
-            
+
             print(f"Copied image: {full_image_path} to {os.path.join(output_images_dir, image_filename)}")
-            
-            # Update the image path in the Markdown
-            return f'![{image_filename}](images/{image_filename})'
-        
+
+            # Update the image path in the Markdown with size attributes if provided
+            if size:
+                width, height = size.split('x')
+                return f'<img src="images/{image_filename}" alt="{image_filename}" width="{width}" height="{height}">'
+            else:
+                return f'![{image_filename}](images/{image_filename})'
+
         print(f"Warning: Image not found: {image_path}")
-        return match.group(0)  # Return original if image not found
+        return full_match  # Return original if image not found
 
-    # Process embeds
-    content = re.sub(r'!\[\[(.*?)\]\]', process_embeds, content)
-    
-    # Process links
-    content = re.sub(r'\[\[(.*?)\]\]', process_links, content)
-
-    # Process images (including "!Pasted image" syntax)
-    content = re.sub(r'!(Pasted image [0-9]+\.png)', process_images, content)
+    # Apply all processing functions
+    content = re.sub(r'!\[\[(.+?)\]\]', process_images, content)
+    content = re.sub(r'\[\[(.+?)\]\]', process_links, content)
+    content = re.sub(r'!\[(.*?)\]\((.+?)(\|.+?)?\)', process_images, content)
 
     return content
 
@@ -99,7 +104,6 @@ def generate_feeds(pages, output_path, config):
     fg.subtitle(config.get('site_description', 'A static site generated from Markdown files'))
     fg.language('en')
 
-    # Use UTC timezone
     utc_tz = pytz.UTC
 
     for page in pages:
@@ -111,12 +115,10 @@ def generate_feeds(pages, output_path, config):
         fe.description(html.escape(page['summary']))
         fe.pubDate(datetime.now(utc_tz))
 
-    # Generate RSS feed
     rss_path = os.path.join(output_path, 'rss.xml')
     fg.rss_file(rss_path)
     print(f"RSS feed generated: {rss_path}")
-    
-    # Generate Atom feed
+
     atom_path = os.path.join(output_path, 'atom.xml')
     fg.atom_file(atom_path)
     print(f"Atom feed generated: {atom_path}")
@@ -132,10 +134,8 @@ def generate_site(config):
     page_template = env.get_template('page.html')
     index_template = env.get_template('index.html')
 
-    # Set up Markdown with extensions
     md = markdown.Markdown(extensions=['tables', 'fenced_code'])
 
-    # Copy style.css to output directory
     style_src = os.path.join('templates', 'style.css')
     style_dst = os.path.join(output_path, 'style.css')
     if os.path.exists(style_src):
@@ -148,35 +148,37 @@ def generate_site(config):
     total_pages = len(pages)
     for index, page in enumerate(pages, start=1):
         print(f"Processing file {index}/{total_pages}: {page}")
-        
+
         input_path = os.path.join(vault_path, page)
         output_file = os.path.splitext(page)[0] + '.html'
         output_file_path = os.path.join(output_path, output_file)
 
-        with open(input_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        try:
+            with open(input_path, 'r', encoding='utf-8') as f:
+                content = f.read()
 
-        content = remove_frontmatter(content)
-        content = process_content(content, vault_path, output_path, config)
+            content = remove_frontmatter(content)
+            processed_content = process_content(content, vault_path, output_path, config)
 
-        # Convert Markdown to HTML using the configured Markdown instance
-        html_content = md.convert(content)
+            html_content = md.convert(processed_content)
 
-        page_html = page_template.render(content=html_content, title=os.path.splitext(page)[0])
+            page_html = page_template.render(content=html_content, title=os.path.splitext(page)[0])
 
-        with open(output_file_path, 'w', encoding='utf-8') as f:
-            f.write(page_html)
+            with open(output_file_path, 'w', encoding='utf-8') as f:
+                f.write(page_html)
 
-        # Create a summary for the RSS feed (first 150 characters)
-        summary = re.sub(r'<[^>]+>', '', html_content)[:150] + '...'
+            summary = re.sub(r'<[^>]+>', '', html_content)[:150] + '...'
 
-        processed_pages.append({
-            'title': os.path.splitext(page)[0],
-            'link': output_file,
-            'summary': summary
-        })
+            processed_pages.append({
+                'title': os.path.splitext(page)[0],
+                'link': output_file,
+                'summary': summary
+            })
 
-        print(f"Converted {page} to {output_file}")
+            print(f"Converted {page} to {output_file}")
+        except Exception as e:
+            print(f"Error processing {page}: {str(e)}")
+            continue
 
     print("Generating index.html...")
     index_html = index_template.render(pages=processed_pages)
@@ -199,5 +201,3 @@ if __name__ == '__main__':
         print(f"An error occurred: {str(e)}")
         import traceback
         traceback.print_exc()
-
-

@@ -1,6 +1,8 @@
 vault_path: /home/rudyon/memx
-output_path: /home/rudyon/Development/rudyon.github.io
+output_path: /home/rudyon/devl/rudyon.github.io
 pages:
+  - sicp.md
+  - 'sicp racket guide.md'
   - plan9.md
   - conformity.md
   - shivi.md
