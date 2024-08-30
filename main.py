@@ -47,13 +47,25 @@ def process_content(content, vault_path, output_path, config, depth=0):
         else:
             return link_text  # Remove brackets for non-config pages
 
+    
     def process_images(match):
         full_match = match.group(0)
         image_parts = match.group(1).split('|')
         image_path = image_parts[0].strip()
-        size = image_parts[1] if len(image_parts) > 1 else None
+        
+        # Initialize variables for additional attributes
+        size = None
+        float_direction = None
+        
+        # Process additional attributes
+        for part in image_parts[1:]:
+            part = part.strip().lower()
+            if part in ['left', 'right']:
+                float_direction = part
+            elif part.isdigit():
+                size = part
 
-        print(f"Processing image: {image_path}, Size: {size}")
+        print(f"Processing image: {image_path}, Size: {size}, Float: {float_direction}")
 
         # Check if the image path is relative
         if not os.path.isabs(image_path):
@@ -76,12 +88,18 @@ def process_content(content, vault_path, output_path, config, depth=0):
 
             print(f"Copied image: {full_image_path} to {os.path.join(output_images_dir, image_filename)}")
 
-            # Update the image path in the Markdown with size attributes if provided
+            # Construct the image tag with appropriate attributes
+            img_tag = f'<img src="images/{image_filename}" alt="{image_filename}"'
+            
             if size:
-                width, height = size.split('x')
-                return f'<img src="images/{image_filename}" alt="{image_filename}" width="{width}" height="{height}">'
-            else:
-                return f'![{image_filename}](images/{image_filename})'
+                img_tag += f' width="{size}"'
+            
+            if float_direction:
+                img_tag += f' style="float: {float_direction}; margin: 10px;"'
+            
+            img_tag += '>'
+
+            return img_tag
 
         print(f"Warning: Image not found: {image_path}")
         return full_match  # Return original if image not found
