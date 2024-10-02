@@ -9,6 +9,7 @@ from datetime import datetime
 import html
 import pytz
 from urllib.parse import urljoin
+import traceback
 
 def load_config(config_path):
     with open(config_path, 'r') as config_file:
@@ -26,56 +27,28 @@ def process_content(content, vault_path, output_path, config, depth=0):
     if depth > 10:  # Prevent infinite recursion
         return content
 
-    def process_embeds(match):
-        embed_filename = match.group(1) + '.md'
-        embed_path = os.path.join(vault_path, embed_filename)
-        if os.path.exists(embed_path):
-            with open(embed_path, 'r', encoding='utf-8') as embed_file:
-                embed_content = embed_file.read()
-            embed_content = remove_frontmatter(embed_content)
-            return process_content(embed_content, vault_path, output_path, config, depth + 1)
-        return match.group(0)  # Return original if file not found
-
-    def process_links(match):
-        link_parts = match.group(1).split('|')
-        link_text = link_parts[-1].strip()
-        link_target = link_parts[0].strip()
-        link_filename = link_target + '.md'
-
-        if link_filename in config['pages']:
-            return f'[{link_text}]({link_target}.html)'
-        else:
-            return link_text  # Remove brackets for non-config pages
-
-    
-    def process_images(match):
-        full_match = match.group(0)
-        image_parts = match.group(1).split('|')
-        image_path = image_parts[0].strip()
-        
+    def process_image(path, attributes):
         # Initialize variables for additional attributes
         size = None
         float_direction = None
         
         # Process additional attributes
-        for part in image_parts[1:]:
-            part = part.strip().lower()
-            if part in ['left', 'right']:
-                float_direction = part
-            elif part.isdigit():
-                size = part
-
-        print(f"Processing image: {image_path}, Size: {size}, Float: {float_direction}")
+        for attr in attributes:
+            attr = attr.strip().lower()
+            if attr in ['left', 'right']:
+                float_direction = attr
+            elif attr.isdigit():
+                size = attr
 
         # Check if the image path is relative
-        if not os.path.isabs(image_path):
+        if not os.path.isabs(path):
             # First, check in the attachments folder
-            full_image_path = os.path.join(vault_path, 'attachments', image_path)
+            full_image_path = os.path.join(vault_path, 'attachments', path)
             if not os.path.exists(full_image_path):
                 # If not found in attachments, check in the vault root
-                full_image_path = os.path.join(vault_path, image_path)
+                full_image_path = os.path.join(vault_path, path)
         else:
-            full_image_path = image_path
+            full_image_path = path
 
         if os.path.exists(full_image_path):
             # Create 'images' directory in the output path if it doesn't exist
@@ -85,8 +58,6 @@ def process_content(content, vault_path, output_path, config, depth=0):
             # Copy the image to the output directory
             image_filename = os.path.basename(full_image_path)
             shutil.copy2(full_image_path, os.path.join(output_images_dir, image_filename))
-
-            print(f"Copied image: {full_image_path} to {os.path.join(output_images_dir, image_filename)}")
 
             # Construct the image tag with appropriate attributes
             img_tag = f'<img src="images/{image_filename}" alt="{image_filename}"'
@@ -101,13 +72,54 @@ def process_content(content, vault_path, output_path, config, depth=0):
 
             return img_tag
 
-        print(f"Warning: Image not found: {image_path}")
-        return full_match  # Return original if image not found
+        return None  # Return None if image not found
+
+    def process_embeds(match):
+        embed_path = match.group(1)
+        parts = embed_path.split('|')
+        path = parts[0].strip()
+        attributes = parts[1:] if len(parts) > 1 else []
+        
+        # Check if it's an image embed or a note embed
+        if any(path.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif']):
+            result = process_image(path, attributes)
+            return result if result is not None else match.group(0)
+        else:
+            # It's a note embed
+            embed_filename = f"{path}.md"
+            full_embed_path = os.path.join(vault_path, embed_filename)
+            
+            if os.path.exists(full_embed_path):
+                with open(full_embed_path, 'r', encoding='utf-8') as embed_file:
+                    embed_content = embed_file.read()
+                embed_content = remove_frontmatter(embed_content)
+                return process_content(embed_content, vault_path, output_path, config, depth + 1)
+            return match.group(0)  # Return original if file not found
+
+    def process_markdown_images(match):
+        alt_text = match.group(1) or ''
+        path = match.group(2)
+        attributes_str = match.group(3) or ''
+        attributes = attributes_str.strip('|').split('|') if attributes_str else []
+        
+        result = process_image(path, attributes)
+        return result if result is not None else match.group(0)
+
+    def process_links(match):
+        link_parts = match.group(1).split('|')
+        link_text = link_parts[-1].strip()
+        link_target = link_parts[0].strip()
+        link_filename = link_target + '.md'
+
+        if link_filename in config['pages']:
+            return f'[{link_text}]({link_target}.html)'
+        else:
+            return link_text  # Remove brackets for non-config pages
 
     # Apply all processing functions
-    content = re.sub(r'!\[\[(.+?)\]\]', process_images, content)
+    content = re.sub(r'!\[\[(.+?)\]\]', process_embeds, content)
     content = re.sub(r'\[\[(.+?)\]\]', process_links, content)
-    content = re.sub(r'!\[(.*?)\]\((.+?)(\|.+?)?\)', process_images, content)
+    content = re.sub(r'!\[(.*?)\]\((.+?)(\|.+?)?\)', process_markdown_images, content)
 
     return content
 
@@ -116,7 +128,8 @@ def generate_feeds(pages, output_path, config):
     site_url = config.get('site_url', 'http://example.com')
     fg.id(site_url)
     fg.title(config.get('site_title', 'My Static Site'))
-    fg.author({'name': config.get('author_name', 'Site Author'), 'email': config.get('author_email', 'author@example.com')})
+    fg.author({'name': config.get('author_name', 'Site Author'), 
+               'email': config.get('author_email', 'author@example.com')})
     fg.link(href=site_url, rel='alternate')
     fg.logo(config.get('site_logo', 'http://ex.com/logo.jpg'))
     fg.subtitle(config.get('site_description', 'A static site generated from Markdown files'))
@@ -130,8 +143,14 @@ def generate_feeds(pages, output_path, config):
         fe.id(page_url)
         fe.title(page['title'])
         fe.link(href=page_url)
-        fe.description(html.escape(page['summary']))
-        fe.pubDate(datetime.now(utc_tz))
+        
+        # Use full content instead of summary
+        fe.content(content=page['content'], type='html')
+        
+        # Use the last modified timestamp as both published and updated
+        last_modified_utc = page['last_modified'].astimezone(utc_tz)
+        fe.published(last_modified_utc)
+        fe.updated(last_modified_utc)
 
     rss_path = os.path.join(output_path, 'rss.xml')
     fg.rss_file(rss_path)
@@ -167,12 +186,18 @@ def generate_site(config):
     for index, page in enumerate(pages, start=1):
         print(f"Processing file {index}/{total_pages}: {page}")
 
-        input_path = os.path.join(vault_path, page)
+        markdown_path = os.path.join(vault_path, page)
         output_file = os.path.splitext(page)[0] + '.html'
         output_file_path = os.path.join(output_path, output_file)
 
         try:
-            with open(input_path, 'r', encoding='utf-8') as f:
+            # Get the last modification time for the file
+            local_tz = datetime.now().astimezone().tzinfo
+            last_modified = datetime.fromtimestamp(
+                os.path.getmtime(markdown_path)
+            ).replace(tzinfo=local_tz)
+
+            with open(markdown_path, 'r', encoding='utf-8') as f:
                 content = f.read()
 
             content = remove_frontmatter(content)
@@ -180,23 +205,30 @@ def generate_site(config):
 
             html_content = md.convert(processed_content)
 
-            page_html = page_template.render(content=html_content, title=os.path.splitext(page)[0])
+            page_html = page_template.render(
+                content=html_content,
+                title=os.path.splitext(page)[0],
+                last_modified=last_modified
+            )
 
             with open(output_file_path, 'w', encoding='utf-8') as f:
                 f.write(page_html)
 
-            summary = re.sub(r'<[^>]+>', '', html_content)[:150] + '...'
-
             processed_pages.append({
                 'title': os.path.splitext(page)[0],
                 'link': output_file,
-                'summary': summary
+                'content': html_content,
+                'last_modified': last_modified
             })
 
-            print(f"Converted {page} to {output_file}")
+            print(f"Converted {page} to {output_file} (Last modified: {last_modified})")
         except Exception as e:
             print(f"Error processing {page}: {str(e)}")
+            traceback.print_exc()
             continue
+
+    # Sort pages by last modified timestamp, newest first
+    processed_pages.sort(key=lambda x: x['last_modified'], reverse=True)
 
     print("Generating index.html...")
     index_html = index_template.render(pages=processed_pages)
@@ -217,5 +249,4 @@ if __name__ == '__main__':
         print("Site generation complete!")
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-        import traceback
         traceback.print_exc()
